@@ -73,40 +73,40 @@ export const Footer = () => {
           <div>
             <h3 className="font-bold text-lg mb-4">Services</h3>
             <ul>
-              <FooterLink to="/services/interview-prep">
+              <p to="/services/interview-prep">
                 Interview Preparation
-              </FooterLink>
-              <FooterLink to="/services/career-coaching">
+              </p>
+              {/* <p to="/services/career-coaching">
                 Career Coaching
-              </FooterLink>
-              <FooterLink to="/services/resume-building">
+              </p>
+              <p to="/services/resume-building">
                 Resume Building
-              </FooterLink>
+              </p> */}
             </ul>
           </div>
 
           {/* Fourth Column: Address and Social Media */}
           <div>
             <h3 className="font-bold text-lg mb-4">Contact Us</h3>
-            <p className="mb-4">123 AI Street, Tech City, 12345</p>
+            <p className="mb-4">9004875177 surajkanojiya843@gmail.com</p>
             <div className="flex gap-4">
               <SocialLink
-                href="https://facebook.com"
+                href="https://www.facebook.com/share/1AUGcqcnBc/"
                 icon={<Facebook size={24} />}
                 hoverColor="text-blue-500"
               />
               <SocialLink
-                href="https://twitter.com"
+                href="https://x.com/SurajKa96667506"
                 icon={<Twitter size={24} />}
                 hoverColor="text-blue-400"
               />
               <SocialLink
-                href="https://instagram.com"
+                href="https://www.instagram.com/suraj_k._.s?igsh=MXFjdXd3MmlmNWwwOA=="
                 icon={<Instagram size={24} />}
                 hoverColor="text-pink-500"
               />
               <SocialLink
-                href="https://linkedin.com"
+                href="https://www.linkedin.com/in/suraj-kanojiya-362a11375?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app"
                 icon={<Linkedin size={24} />}
                 hoverColor="text-blue-700"
               />
