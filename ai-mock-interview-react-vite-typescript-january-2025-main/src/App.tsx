@@ -39,16 +39,26 @@ const App = () => {
           }
         >
           {/* add all the protect routes */}
-          <Route element={<Generate />} path="/generate">
-            <Route index element={<Dashboard />} />
-            <Route path=":interviewId" element={<CreateEditPage />} />
-            <Route path="interview/:interviewId" element={<MockLoadPage />} />
-            <Route
-              path="interview/:interviewId/start"
-              element={<MockInterviewPage />}
-            />
-            <Route path="feedback/:interviewId" element={<Feedback />} />
-          </Route>
+         <Route element={<Generate />} path="/generate">
+  <Route index element={<Dashboard />} />
+
+  {/* Create or edit an interview */}
+  <Route path="create" element={<CreateEditPage />} />
+  <Route path="edit/:interviewId" element={<CreateEditPage />} />
+
+  {/* View interview details */}
+  <Route path=":interviewId" element={<CreateEditPage />} />
+
+  {/* Prepare and start an interview */}
+  <Route path="interview/:interviewId" element={<MockLoadPage />} />
+  <Route
+    path="interview/:interviewId/start"
+    element={<MockInterviewPage />}
+  />
+
+  {/* Interview feedback */}
+  <Route path="feedback/:interviewId" element={<Feedback />} />
+</Route>
         </Route>
       </Routes>
     </Router>

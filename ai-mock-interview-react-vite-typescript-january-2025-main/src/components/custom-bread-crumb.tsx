@@ -11,12 +11,12 @@ import React from "react";
 
 interface CustomBreadCrumbProps {
   breadCrumbPage: string;
-  breadCrumpItems?: { link: string; label: string }[];
+  breadCrumbItems?: { link: string; label: string }[];
 }
 
 export const CustomBreadCrumb = ({
   breadCrumbPage,
-  breadCrumpItems,
+  breadCrumbItems,
 }: CustomBreadCrumbProps) => {
   return (
     <Breadcrumb>
@@ -26,26 +26,27 @@ export const CustomBreadCrumb = ({
             href="/"
             className="flex items-center justify-center hover:text-emerald-500"
           >
-            <Home className="w-3 h-3 mr-2" />
+            <Home className="mr-2 h-3 w-3" />
             Home
           </BreadcrumbLink>
         </BreadcrumbItem>
 
-        {breadCrumpItems &&
-          breadCrumpItems.map((item, i) => (
-            <React.Fragment key={i}>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbLink
-                  href={item.link}
-                  className="hover:text-emerald-500"
-                >
-                  {item.label}
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-            </React.Fragment>
-          ))}
+        {breadCrumbItems?.map((item, index) => (
+          <React.Fragment key={`${item.link}-${index}`}>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink
+                href={item.link}
+                className="hover:text-emerald-500"
+              >
+                {item.label}
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+          </React.Fragment>
+        ))}
+
         <BreadcrumbSeparator />
+
         <BreadcrumbItem>
           <BreadcrumbPage>{breadCrumbPage}</BreadcrumbPage>
         </BreadcrumbItem>

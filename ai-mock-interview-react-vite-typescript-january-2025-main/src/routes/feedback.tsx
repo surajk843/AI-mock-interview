@@ -1,17 +1,10 @@
-import { db } from "@/config/firebase.config";
-import { Interview, UserAnswer } from "@/types";
 import { useAuth } from "@clerk/clerk-react";
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-} from "firebase/firestore";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
+import { CircleCheck, Star } from "lucide-react";
+
+import type { Interview, UserAnswer } from "@/types";
 import { LoaderPage } from "./loader-page";
 import { CustomBreadCrumb } from "@/components/custom-bread-crumb";
 import { Headings } from "@/components/headings";
@@ -23,121 +16,216 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
-import { CircleCheck, Star } from "lucide-react";
-import { Card, CardDescription, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardDescription,
+  CardTitle,
+} from "@/components/ui/card";
+
+const API_URL = "http://localhost:5000";
 
 export const Feedback = () => {
   const { interviewId } = useParams<{ interviewId: string }>();
-  const [interview, setInterview] = useState<Interview | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [feedbacks, setFeedbacks] = useState<UserAnswer[]>([]);
-  const [activeFeed, setActiveFeed] = useState("");
-  const { userId } = useAuth();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
   const navigate = useNavigate();
 
-  if (!interviewId) {
-    navigate("/generate", { replace: true });
-  }
+  const [interview, setInterview] = useState<Interview | null>(null);
+  const [feedbacks, setFeedbacks] = useState<UserAnswer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeFeed, setActiveFeed] = useState("");
+
   useEffect(() => {
-    if (interviewId) {
-      const fetchInterview = async () => {
-        if (interviewId) {
-          try {
-            const interviewDoc = await getDoc(
-              doc(db, "interviews", interviewId)
-            );
-            if (interviewDoc.exists()) {
-              setInterview({
-                id: interviewDoc.id,
-                ...interviewDoc.data(),
-              } as Interview);
-            }
-          } catch (error) {
-            console.log(error);
-          }
-        }
-      };
+    if (!isLoaded) {
+      return;
+    }
 
-      const fetchFeedbacks = async () => {
-        setIsLoading(true);
-        try {
-          const querSanpRef = query(
-            collection(db, "userAnswers"),
-            where("userId", "==", userId),
-            where("mockIdRef", "==", interviewId)
+    if (!isSignedIn) {
+      navigate("/signin", { replace: true });
+      return;
+    }
+
+    if (!interviewId) {
+      toast.error("Interview ID is missing.");
+      navigate("/generate", { replace: true });
+      return;
+    }
+
+    let cancelled = false;
+
+    const fetchFeedback = async () => {
+      setIsLoading(true);
+
+      try {
+        const token = await getToken();
+
+        if (!token) {
+          throw new Error(
+            "Unable to authenticate. Please sign in again."
           );
+        }
 
-          const querySnap = await getDocs(querSanpRef);
+        const headers = {
+          Authorization: `Bearer ${token}`,
+        };
 
-          const interviewData: UserAnswer[] = querySnap.docs.map((doc) => {
-            return { id: doc.id, ...doc.data() } as UserAnswer;
+        const [interviewResponse, feedbackResponse] = await Promise.all([
+          fetch(
+            `${API_URL}/api/interviews/${encodeURIComponent(interviewId)}`,
+            {
+              method: "GET",
+              headers,
+            }
+          ),
+          fetch(
+            `${API_URL}/api/user-answers/${encodeURIComponent(interviewId)}`,
+            {
+              method: "GET",
+              headers,
+            }
+          ),
+        ]);
+
+        const [interviewResult, feedbackResult] = await Promise.all([
+          interviewResponse.json().catch(() => ({})),
+          feedbackResponse.json().catch(() => ({})),
+        ]);
+
+        if (!interviewResponse.ok) {
+          throw new Error(
+            interviewResult.message ||
+              interviewResult.error ||
+              "Unable to load the interview."
+          );
+        }
+
+        if (!feedbackResponse.ok) {
+          throw new Error(
+            feedbackResult.message ||
+              feedbackResult.error ||
+              "Unable to load interview feedback."
+          );
+        }
+
+        if (!interviewResult.interview) {
+          throw new Error("Interview not found.");
+        }
+
+        if (
+          !Array.isArray(feedbackResult.answers) ||
+          !feedbackResult.answers.every(
+            (answer: UserAnswer) =>
+              answer &&
+              typeof answer.id === "string" &&
+              typeof answer.question === "string" &&
+              typeof answer.correct_ans === "string" &&
+              typeof answer.user_ans === "string" &&
+              typeof answer.feedback === "string" &&
+              Number.isFinite(Number(answer.rating))
+          )
+        ) {
+          throw new Error(
+            "The backend returned an invalid feedback format."
+          );
+        }
+
+        if (!cancelled) {
+          setInterview(interviewResult.interview);
+          setFeedbacks(feedbackResult.answers);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Error loading feedback:", error);
+
+          toast.error("Unable to load feedback", {
+            description:
+              error instanceof Error
+                ? error.message
+                : "Please try again later.",
           });
 
-          setFeedbacks(interviewData);
-        } catch (error) {
-          console.log(error);
-          toast("Error", {
-            description: "Something went wrong. Please try again later..",
-          });
-        } finally {
+          setInterview(null);
+          setFeedbacks([]);
+          navigate("/generate", { replace: true });
+        }
+      } finally {
+        if (!cancelled) {
           setIsLoading(false);
         }
-      };
-      fetchInterview();
-      fetchFeedbacks();
+      }
+    };
+
+    fetchFeedback();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [interviewId, isLoaded, isSignedIn, getToken, navigate]);
+
+  const overallRating = useMemo(() => {
+    if (feedbacks.length === 0) {
+      return "0.0";
     }
-  }, [interviewId, navigate, userId]);
-
-  //   calculate the ratings out of 10
-
-  const overAllRating = useMemo(() => {
-    if (feedbacks.length === 0) return "0.0";
 
     const totalRatings = feedbacks.reduce(
-      (acc, feedback) => acc + feedback.rating,
+      (total, feedback) => total + Number(feedback.rating || 0),
       0
     );
 
     return (totalRatings / feedbacks.length).toFixed(1);
   }, [feedbacks]);
 
-  if (isLoading) {
+  if (!isLoaded || isLoading) {
     return <LoaderPage className="w-full h-[70vh]" />;
+  }
+
+  if (!isSignedIn || !interview) {
+    return null;
   }
 
   return (
     <div className="flex flex-col w-full gap-8 py-5">
+      {/* Breadcrumb */}
       <div className="flex items-center justify-between w-full gap-2">
         <CustomBreadCrumb
-          breadCrumbPage={"Feedback"}
+          breadCrumpPage="Feedback"
           breadCrumpItems={[
-            { label: "Mock Interviews", link: "/generate" },
             {
-              label: `${interview?.position}`,
-              link: `/generate/interview/${interview?.id}`,
+              label: "Mock Interviews",
+              link: "/generate",
+            },
+            {
+              label: interview.position,
+              link: `/generate/interview/${interview.id}`,
             },
           ]}
         />
       </div>
 
+      {/* Overall feedback */}
       <Headings
-        title="Congratulations !"
-        description="Your personalized feedback is now available. Dive in to see your strengths, areas for improvement, and tips to help you ace your next interview."
+        title="Congratulations!"
+        description="Your personalized feedback is now available. Review your strengths, areas for improvement, and tips to help you prepare for your next interview."
       />
 
       <p className="text-base text-muted-foreground">
-        Your overall interview ratings :{" "}
+        Your overall interview rating:{" "}
         <span className="text-emerald-500 font-semibold text-xl">
-          {overAllRating} / 10
+          {overallRating} / 10
         </span>
       </p>
 
-      {interview && <InterviewPin interview={interview} onMockPage />}
+      <InterviewPin interview={interview} onMockPage />
 
       <Headings title="Interview Feedback" isSubHeading />
 
-      {feedbacks && (
-        <Accordion type="single" collapsible className="space-y-6">
+      {/* Individual question feedback */}
+      {feedbacks.length > 0 ? (
+        <Accordion
+          type="single"
+          collapsible
+          className="space-y-6"
+          onValueChange={setActiveFeed}
+        >
           {feedbacks.map((feed) => (
             <AccordionItem
               key={feed.id}
@@ -145,7 +233,6 @@ export const Feedback = () => {
               className="border rounded-lg shadow-md"
             >
               <AccordionTrigger
-                onClick={() => setActiveFeed(feed.id)}
                 className={cn(
                   "px-5 py-3 flex items-center justify-between text-base rounded-t-lg transition-colors hover:no-underline",
                   activeFeed === feed.id
@@ -157,9 +244,9 @@ export const Feedback = () => {
               </AccordionTrigger>
 
               <AccordionContent className="px-5 py-6 bg-white rounded-b-lg space-y-5 shadow-inner">
-                <div className="text-lg font-semibold to-gray-700">
+                <div className="text-lg font-semibold text-gray-700">
                   <Star className="inline mr-2 text-yellow-400" />
-                  Rating : {feed.rating}
+                  Rating: {Number(feed.rating).toFixed(1)} / 10
                 </div>
 
                 <Card className="border-none space-y-3 p-4 bg-green-50 rounded-lg shadow-md">
@@ -168,7 +255,7 @@ export const Feedback = () => {
                     Expected Answer
                   </CardTitle>
 
-                  <CardDescription className="font-medium text-gray-700">
+                  <CardDescription className="font-medium text-gray-700 whitespace-pre-wrap">
                     {feed.correct_ans}
                   </CardDescription>
                 </Card>
@@ -179,7 +266,7 @@ export const Feedback = () => {
                     Your Answer
                   </CardTitle>
 
-                  <CardDescription className="font-medium text-gray-700">
+                  <CardDescription className="font-medium text-gray-700 whitespace-pre-wrap">
                     {feed.user_ans}
                   </CardDescription>
                 </Card>
@@ -190,7 +277,7 @@ export const Feedback = () => {
                     Feedback
                   </CardTitle>
 
-                  <CardDescription className="font-medium text-gray-700">
+                  <CardDescription className="font-medium text-gray-700 whitespace-pre-wrap">
                     {feed.feedback}
                   </CardDescription>
                 </Card>
@@ -198,6 +285,11 @@ export const Feedback = () => {
             </AccordionItem>
           ))}
         </Accordion>
+      ) : (
+        <p className="text-muted-foreground">
+          No feedback is available for this interview yet. Complete the
+          interview and save your answers first.
+        </p>
       )}
     </div>
   );

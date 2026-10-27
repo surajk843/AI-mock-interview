@@ -26,3 +26,18 @@ dist-ssr
 # enivronment variables
 .env
 .env.*
+
+
+.env
+.env.*
+!.env.example
+
+server/.env
+server/.env.*
+!server/.env.example
+
+server/firebase-service-account.json
+
+.env
+firebase-service-account.json
+node_modules/

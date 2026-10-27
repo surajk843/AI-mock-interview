@@ -1,54 +1,99 @@
-  import { db } from "@/config/firebase.config";
-  import { LoaderPage } from "@/routes/loader-page";
-  import { User } from "@/types";
-  import { useAuth, useUser } from "@clerk/clerk-react";
-  import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
-  import { useEffect, useState } from "react";
-  import { useLocation, useNavigate } from "react-router-dom";
+import { useUser, useAuth } from "@clerk/clerk-react";
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { toast } from "sonner";
 
-  const AuthHanlder = () => {
-    const { isSignedIn } = useAuth();
-    const { user } = useUser();
+const API_URL = "http://localhost:5000";
 
-    const pathname = useLocation().pathname;
-    const navigate = useNavigate();
+const AuthHanlder = () => {
+  const { isLoaded: isAuthLoaded, isSignedIn, getToken } = useAuth();
+  const { isLoaded: isUserLoaded, user } = useUser();
+  const { pathname } = useLocation();
 
-    const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-      const storeUserData = async () => {
-        if (isSignedIn && user) {
-          setLoading(true);
-          try {
-            const userSanp = await getDoc(doc(db, "users", user.id));
-            if (!userSanp.exists()) {
-              const userData: User = {
-                id: user.id,
-                name: user.fullName || user.firstName || "Anonymous",
-                email: user.primaryEmailAddress?.emailAddress || "N/A",
-                imageUrl: user.imageUrl,
-                createdAt: serverTimestamp(),
-                updateAt: serverTimestamp(),
-              };
-
-              await setDoc(doc(db, "users", user.id), userData);
-            }
-          } catch (error) {
-            console.log("Error on storing the user data : ", error);
-          } finally {
-            setLoading(false);
-          }
-        }
-      };
-
-      storeUserData();
-    }, [isSignedIn, user, pathname, navigate]);
-
-    if (loading) {
-      return <LoaderPage />;
+  useEffect(() => {
+    if (
+      !isAuthLoaded ||
+      !isUserLoaded ||
+      !isSignedIn ||
+      !user
+    ) {
+      return;
     }
 
-    return null;
-  };
+    let cancelled = false;
 
-  export default AuthHanlder;
+    const syncUser = async () => {
+      try {
+        const token = await getToken();
+
+        if (!token) {
+          throw new Error("Unable to authenticate. Please sign in again.");
+        }
+
+        const name =
+          user.fullName?.trim() ||
+          [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+
+        const email =
+          user.primaryEmailAddress?.emailAddress?.trim();
+
+        if (!name || !email) {
+          throw new Error(
+            "Your Clerk profile is missing a name or email address. Please check your profile."
+          );
+        }
+
+        const response = await fetch(`${API_URL}/api/users/me`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name,
+            email,
+            imageUrl: user.imageUrl || "",
+          }),
+        });
+
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(
+            result.error ||
+              result.message ||
+              "Unable to synchronize your user profile."
+          );
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error("User synchronization error:", error);
+
+          toast.error("Unable to synchronize your profile", {
+            description:
+              error instanceof Error
+                ? error.message
+                : "Please try again.",
+          });
+        }
+      }
+    };
+
+    void syncUser();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isAuthLoaded,
+    isUserLoaded,
+    isSignedIn,
+    user,
+    getToken,
+    pathname,
+  ]);
+
+  return null;
+};
+
+export default AuthHanlder;
