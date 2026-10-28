@@ -131,8 +131,8 @@ export const MockLoadPage = () => {
       {/* Breadcrumb and start button */}
       <div className="flex items-center justify-between w-full gap-2">
         <CustomBreadCrumb
-          breadCrumpPage={interview.position}
-          breadCrumpItems={[
+          breadCrumbPage={interview.position}
+          breadCrumbItems={[
             {
               label: "Mock Interviews",
               link: "/generate",

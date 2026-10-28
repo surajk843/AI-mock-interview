@@ -187,8 +187,8 @@ export const Feedback = () => {
       {/* Breadcrumb */}
       <div className="flex items-center justify-between w-full gap-2">
         <CustomBreadCrumb
-          breadCrumpPage="Feedback"
-          breadCrumpItems={[
+          breadCrumbPage="Feedback"
+          breadCrumbItems={[
             {
               label: "Mock Interviews",
               link: "/generate",

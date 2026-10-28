@@ -53,10 +53,7 @@ const formSchema = z.object({
     .min(0, "Experience cannot be negative")
     .max(60, "Experience cannot exceed 60 years"),
 
-  techStack: z
-    .string()
-    .trim()
-    .min(1, "Tech stack is required"),
+  techStack: z.string().trim().min(1, "Tech stack is required"),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -90,14 +87,13 @@ export const FormMockInterview = ({
   });
 
   const { isValid, isSubmitting } = form.formState;
-
   const isEditing = Boolean(initialData?.id);
 
   const title = initialData
     ? initialData.position
     : "Create a new mock interview";
 
-  const breadCrumpPage = initialData
+  const breadCrumbPage = initialData
     ? initialData.position
     : "Create";
 
@@ -113,9 +109,6 @@ export const FormMockInterview = ({
         description: "New mock interview created successfully.",
       };
 
-  /**
-   * Retrieve the Clerk authentication token.
-   */
   const getAuthToken = async (): Promise<string> => {
     if (!isLoaded || !isSignedIn) {
       throw new Error("Please sign in before continuing.");
@@ -132,11 +125,6 @@ export const FormMockInterview = ({
     return token;
   };
 
-  /**
-   * Reset the form fields and clear validation errors.
-   *
-   * This function does not call the backend or save any changes.
-   */
   const handleReset = () => {
     if (loading || isSubmitting) {
       return;
@@ -145,9 +133,6 @@ export const FormMockInterview = ({
     form.reset(EMPTY_FORM_VALUES);
   };
 
-  /**
-   * Generate five interview questions using the backend Gemini API.
-   */
   const generateAiResponse = async (
     data: FormData,
     token: string
@@ -200,9 +185,6 @@ export const FormMockInterview = ({
     return questions as InterviewQuestion[];
   };
 
-  /**
-   * Delete an interview through the authenticated backend.
-   */
   const handleDelete = async () => {
     if (!initialData?.id) {
       toast.error("Unable to delete interview.", {
@@ -246,7 +228,6 @@ export const FormMockInterview = ({
       }
 
       toast.success("Interview deleted successfully.");
-
       navigate("/generate", { replace: true });
     } catch (error) {
       console.error("Delete interview error:", error);
@@ -262,16 +243,11 @@ export const FormMockInterview = ({
     }
   };
 
-  /**
-   * Create or update an interview through the backend.
-   */
   const onSubmit = async (data: FormData) => {
     try {
       setLoading(true);
 
       const token = await getAuthToken();
-
-      // Generate questions through the protected backend endpoint.
       const questions = await generateAiResponse(data, token);
 
       const url = isEditing
@@ -319,9 +295,6 @@ export const FormMockInterview = ({
     }
   };
 
-  /**
-   * Populate the form when editing an existing interview.
-   */
   useEffect(() => {
     if (initialData) {
       form.reset({
@@ -338,8 +311,8 @@ export const FormMockInterview = ({
   return (
     <div className="w-full flex-col space-y-4">
       <CustomBreadCrumb
-        breadCrumpPage={breadCrumpPage}
-        breadCrumpItems={[
+        breadCrumbPage={breadCrumbPage}
+        breadCrumbItems={[
           {
             label: "Mock Interviews",
             link: "/generate",
@@ -377,7 +350,6 @@ export const FormMockInterview = ({
           onSubmit={form.handleSubmit(onSubmit)}
           className="w-full p-8 rounded-lg flex-col flex items-start justify-start gap-6 shadow-md"
         >
-          {/* Job Position */}
           <FormField
             control={form.control}
             name="position"
@@ -400,7 +372,6 @@ export const FormMockInterview = ({
             )}
           />
 
-          {/* Job Description */}
           <FormField
             control={form.control}
             name="description"
@@ -423,7 +394,6 @@ export const FormMockInterview = ({
             )}
           />
 
-          {/* Experience */}
           <FormField
             control={form.control}
             name="experience"
@@ -451,7 +421,6 @@ export const FormMockInterview = ({
             )}
           />
 
-          {/* Tech Stack */}
           <FormField
             control={form.control}
             name="techStack"
@@ -474,7 +443,6 @@ export const FormMockInterview = ({
             )}
           />
 
-          {/* Form Actions */}
           <div className="w-full flex items-center justify-end gap-6">
             <Button
               type="button"

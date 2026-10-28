@@ -9,16 +9,26 @@ const serviceAccountPath = path.join(
 );
 
 if (!process.env.FIREBASE_PROJECT_ID) {
-  throw new Error("FIREBASE_PROJECT_ID is missing from server/.env");
+  throw new Error("FIREBASE_PROJECT_ID is missing.");
 }
 
-if (!fs.existsSync(serviceAccountPath)) {
+let serviceAccount;
+
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  try {
+    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  } catch {
+    throw new Error(
+      "FIREBASE_SERVICE_ACCOUNT contains invalid JSON."
+    );
+  }
+} else if (fs.existsSync(serviceAccountPath)) {
+  serviceAccount = require(serviceAccountPath);
+} else {
   throw new Error(
-    "Firebase service account file not found: firebase-service-account.json"
+    "Firebase credentials are missing. Configure FIREBASE_SERVICE_ACCOUNT or provide firebase-service-account.json."
   );
 }
-
-const serviceAccount = require(serviceAccountPath);
 
 const app =
   getApps().length === 0
