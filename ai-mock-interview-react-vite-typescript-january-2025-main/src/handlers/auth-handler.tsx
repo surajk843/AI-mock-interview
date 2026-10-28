@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { toast } from "sonner";
 
-const API_URL = "http://localhost:5000";
+const API_URL = "https://ai-mock-interview-api-vrzo.onrender.com";
 
 const AuthHanlder = () => {
   const { isLoaded: isAuthLoaded, isSignedIn, getToken } = useAuth();

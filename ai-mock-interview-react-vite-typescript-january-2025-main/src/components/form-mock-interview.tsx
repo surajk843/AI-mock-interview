@@ -33,7 +33,7 @@ interface InterviewQuestion {
   answer: string;
 }
 
-const API_URL = "http://localhost:5000";
+const API_URL = "https://ai-mock-interview-api-vrzo.onrender.com";
 
 const formSchema = z.object({
   position: z

@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-const API_URL = "http://localhost:5000";
+const API_URL = "https://ai-mock-interview-api-vrzo.onrender.com";
 
 export const Dashboard = () => {
   const [interviews, setInterviews] = useState<Interview[]>([]);

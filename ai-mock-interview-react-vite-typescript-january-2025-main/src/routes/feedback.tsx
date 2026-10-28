@@ -22,7 +22,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-const API_URL = "http://localhost:5000";
+const API_URL = "https://ai-mock-interview-api-vrzo.onrender.com";
 
 export const Feedback = () => {
   const { interviewId } = useParams<{ interviewId: string }>();
